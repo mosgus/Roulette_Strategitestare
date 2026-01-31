@@ -8,6 +8,8 @@
 """
 import random
 
+from game_engine.colors import num_to_color
+
 ''' INDEX/NUMBER MAPPING '''
 def index_to_num(index):
     if index == 0:
@@ -16,16 +18,6 @@ def index_to_num(index):
         return '00'
     return str(index - 1)
 
-def num_to_color(num):
-    if num == '0' or num == '00':
-        return 'Green'
-    n = int(num)
-    from game_engine import build_bet as bb
-    if n in bb.RED_SET:
-        return 'Red'
-    if n in bb.BLACK_SET:
-        return 'Black'
-    return 'Unknown'
 ''' # useless currently
 def num_to_index(num):
     if num == '0':
