@@ -87,7 +87,7 @@ def run_martingale(initial_balance, buyout, sequence_path=None, bet_spec=None):
 
         # 1. Check if we can afford the current wager
         if current_wager > balance:
-            print(f"\nCan't afford wager of ${current_wager}. Going all-in with ${balance}.")
+            print(f"\nCan't afford wager of ${current_wager:.2f}. Going all-in with ${balance:.2f}.")
             current_wager = balance
 
         # 2. Construct the bet
@@ -114,7 +114,7 @@ def run_martingale(initial_balance, buyout, sequence_path=None, bet_spec=None):
         else:
             current_wager *= 2  # Double down
 
-        print(f"{round_count} - Bet on {bet_label} | Landed on {win_label} ({color}) | Net: ${net_result:+.2f} | Balance: ${balance:.2f}")
+        print(f"{round_count} - Bet on {bet_label} | Landed on {win_label} ({color}) | Net: {net_result:+.2f} | Balance: {balance:.2f}")
 
     # Termination Summary
     if balance >= target_balance:
