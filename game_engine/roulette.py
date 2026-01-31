@@ -8,20 +8,21 @@
 """
 import random
 
-''' INDEX/LABEL MAPPING '''
+''' INDEX/NUMBER MAPPING '''
 def index_to_num(index):
     if index == 0:
         return '0'
     if index == 1:
         return '00'
     return str(index - 1)
-
-def num_to_index(label):
-    if label == '0':
+''' # useless currently
+def num_to_index(num):
+    if num == '0':
         return 0
-    if label == '00':
+    if num == '00':
         return 1
-    return int(label) + 1
+    return int(num) + 1
+'''
 
 ''' RNG HELPER '''
 def get_rng(seed=None):
@@ -57,8 +58,8 @@ def roulette(bet_array, rng=None, seed=None):
 
     return dub, winning_index, winning_num, net_payout
 
+# USAGE EXAMPLE 1:1
 '''
-USAGE EXAMPLE 1:1: 
 if __name__ == "__main__":
     # Simulate a $10 bet on the number '7' (index 8)
     test_bet = [0] * 38
@@ -67,10 +68,10 @@ if __name__ == "__main__":
     for i in range(2, 20):
         test_bet[i] = bet_amount_per_number
 
-    dub, winner, winner_label, net = roulette(test_bet)
+    dub, winner, winner_num, net = roulette(test_bet)
 
     print(f"Winning Index: {winner}")
-    print(f"Winning Number: {winner_label}")
+    print(f"Winning Number: {winner_num}")
     if dub > 0:
         print(f"You win: +{net:.2f}")
     else:
