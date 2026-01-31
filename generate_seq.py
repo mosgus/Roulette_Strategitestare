@@ -10,21 +10,7 @@ import sys
 import csv
 import os
 
-from game_engine import build_bet as bb
 from game_engine import roulette
-
-
-def get_color(num):
-    """Determines the color string based on the roulette number."""
-    if num == '0' or num == '00':
-        return 'Green'
-    # Convert string num to int for set lookup
-    n = int(num)
-    if n in bb.RED_SET:
-        return 'Red'
-    if n in bb.BLACK_SET:
-        return 'Black'
-    return 'Unknown'
 
 
 def generate_sequence(spins):
@@ -40,7 +26,7 @@ def generate_sequence(spins):
         for r in range(1, spins + 1):
             win_index = roulette.spin()
             win_num = roulette.index_to_num(win_index)
-            color = get_color(win_num)
+            color = roulette.num_to_color(win_num)
             writer.writerow([r, win_num, win_index, color])
 
     print(f"Successfully generated {spins} rolls in '{filepath}'.")
