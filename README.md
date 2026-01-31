@@ -1,4 +1,7 @@
 # Roulette Lab 🎰🧪
+
+(FREE American Roulette Datasets in /sequences)
+
 A Python (3.x) sandbox for simulating American Roulette, generating deterministic spin sequences, and testing betting strategies (currently Martingale). Includes CSV outputs and simple charting for win rate and balance curves.
 
 The **⚪️ Sequence Generator ⚪️** creates reproducible roulette spin CSVs in `/sequences`, while the **🔴 Martingale Strategy 🔴** can run live RNG or replay a sequence file and export run stats to `/strats/strat_data`.
