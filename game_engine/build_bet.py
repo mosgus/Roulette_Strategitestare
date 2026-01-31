@@ -140,3 +140,54 @@ def validate_bet_array(bet_array):
         if n < 0:
             raise ValueError("bet_array values must be non-negative.")
 
+
+def build_bet_from_spec(bet_spec, amount):
+    if not bet_spec:
+        bet_spec = 'red'
+    parts = [p.strip().lower() for p in bet_spec.split('+') if p.strip()]
+    if not parts:
+        parts = ['red']
+    per_amount = amount / len(parts)
+
+    def _one_bet(part):
+        if part.startswith('custom:'):
+            raw = part[len('custom:'):]
+            values = [float(x) for x in raw.split(',')]
+            validate_bet_array(values)
+            total = sum(values)
+            if total <= 0:
+                raise ValueError("custom bet must sum to a positive value.")
+            scale = per_amount / total
+            return [v * scale for v in values], 'Custom'
+
+        mapping = {
+            'red': (bet_red, 'Red'),
+            'black': (bet_black, 'Black'),
+            'green': (bet_green, 'Green'),
+            'even': (bet_even, 'Even'),
+            'odd': (bet_odd, 'Odd'),
+            'low': (bet_low, 'Low (1-18)'),
+            'high': (bet_high, 'High (19-36)'),
+            '1st12': (bet_1st_12, '1st 12'),
+            '2nd12': (bet_2nd_12, '2nd 12'),
+            '3rd12': (bet_3rd_12, '3rd 12'),
+            'col_a': (bet_column_a, 'Column A'),
+            'col_b': (bet_column_b, 'Column B'),
+            'col_c': (bet_column_c, 'Column C'),
+        }
+        if part.startswith('number:'):
+            tile = part.split(':', 1)[1].strip()
+            return bet_one(tile, per_amount), f'Number {tile}'
+        if part not in mapping:
+            raise ValueError(f"Unknown bet spec: {part}")
+        fn, label = mapping[part]
+        return fn(per_amount), label
+
+    bets = []
+    labels = []
+    for part in parts:
+        bet, label = _one_bet(part)
+        bets.append(bet)
+        labels.append(label)
+
+    return combine_bets(*bets), ' + '.join(labels)

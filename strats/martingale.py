@@ -13,56 +13,8 @@ from game_engine import build_bet as bb
 from game_engine import roulette
 
 
-def build_bet(bet_spec, amount):
-    if not bet_spec:
-        bet_spec = 'red'
-    parts = [p.strip().lower() for p in bet_spec.split('+') if p.strip()]
-    if not parts:
-        parts = ['red']
-    per_amount = amount / len(parts)
-
-    def _one_bet(part):
-        if part.startswith('custom:'):
-            raw = part[len('custom:'):]
-            values = [float(x) for x in raw.split(',')]
-            bb.validate_bet_array(values)
-            total = sum(values)
-            if total <= 0:
-                raise ValueError("custom bet must sum to a positive value.")
-            scale = per_amount / total
-            return [v * scale for v in values], 'Custom'
-
-        mapping = {
-            'red': (bb.bet_red, 'Red'),
-            'black': (bb.bet_black, 'Black'),
-            'green': (bb.bet_green, 'Green'),
-            'even': (bb.bet_even, 'Even'),
-            'odd': (bb.bet_odd, 'Odd'),
-            'low': (bb.bet_low, 'Low (1-18)'),
-            'high': (bb.bet_high, 'High (19-36)'),
-            '1st12': (bb.bet_1st_12, '1st 12'),
-            '2nd12': (bb.bet_2nd_12, '2nd 12'),
-            '3rd12': (bb.bet_3rd_12, '3rd 12'),
-            'col_a': (bb.bet_column_a, 'Column A'),
-            'col_b': (bb.bet_column_b, 'Column B'),
-            'col_c': (bb.bet_column_c, 'Column C'),
-        }
-        if part.startswith('number:'):
-            tile = part.split(':', 1)[1].strip()
-            return bb.bet_one(tile, per_amount), f'Number {tile}'
-        if part not in mapping:
-            raise ValueError(f"Unknown bet spec: {part}")
-        fn, label = mapping[part]
-        return fn(per_amount), label
-
-    bets = []
-    labels = []
-    for part in parts:
-        bet, label = _one_bet(part)
-        bets.append(bet)
-        labels.append(label)
-
-    return bb.combine_bets(*bets), ' + '.join(labels)
+def _slugify_label(label):
+    return ''.join(c for c in label if c.isalnum() or c in ('-', '_'))
 
 
 def run_martingale(initial_balance, buyout, sequence_path=None, bet_spec=None):
@@ -70,6 +22,8 @@ def run_martingale(initial_balance, buyout, sequence_path=None, bet_spec=None):
     target_balance = initial_balance + buyout
     current_wager = 1.0
     round_count = 0
+    rows = []
+    bet_label_for_file = bb.build_bet_from_spec(bet_spec, 1.0)[1]
 
     # Optional: Load sequence data if a file path is provided
     outcomes = []
@@ -87,11 +41,11 @@ def run_martingale(initial_balance, buyout, sequence_path=None, bet_spec=None):
 
         # 1. Check if we can afford the current wager
         if current_wager > balance:
-            print(f"\nCan't afford wager of ${current_wager:.2f}. Going all-in with ${balance:.2f}.")
+            print(f"Can't afford wager of ${current_wager:.2f}. Going all-in with ${balance:.2f} - 🟡")
             current_wager = balance
 
         # 2. Construct the bet
-        bet_array, bet_label = build_bet(bet_spec, current_wager)
+        bet_array, bet_label = bb.build_bet_from_spec(bet_spec, current_wager)
 
         # 3. Get the winning index (From file or live RNG)
         if outcomes and (round_count - 1) < len(outcomes):
@@ -114,15 +68,44 @@ def run_martingale(initial_balance, buyout, sequence_path=None, bet_spec=None):
         else:
             current_wager *= 2  # Double down
 
-        print(f"{round_count} - Bet on {bet_label} | Landed on {win_label} ({color}) | Net: {net_result:+.2f} | Balance: {balance:.2f}")
+        rows.append({
+            'Round': round_count,
+            'Bet': bet_label,
+            'Winning Number': win_label,
+            'Color': color,
+            'Net': f"{net_result:+.2f}",
+            'Balance': f"{balance:.2f}",
+        })
+
+        print(f"Round {round_count}: Bet on {bet_label} | Landed on {win_label} ({color}) | Net: ${net_result:+.2f} | Balance: ${balance:.2f}")
 
     # Termination Summary
     if balance >= target_balance:
-        print(f"SUCCESS: Hit buyout target in {round_count} rounds! - 🔴")
+        outcome_label = "SUCCESS"
+        print(f"{outcome_label}: Hit buyout target in {round_count} rounds! - 🔴")
     elif max_rounds is not None and round_count >= max_rounds:
-        print(f"DONE: Reached end of sequence in {round_count} rounds. - 🔴")
+        outcome_label = "DONE"
+        print(f"{outcome_label}: Reached end of sequence in {round_count} rounds. - 🔴")
     else:
-        print(f"BUST: Bankroll hit zero in {round_count} rounds. - 🔴")
+        outcome_label = "BUST"
+        print(f"{outcome_label}: Bankroll hit zero in {round_count} rounds. - 🔴")
+
+    n_str = int(initial_balance)
+    m_str = int(buyout)
+    bet_slug = _slugify_label(bet_label_for_file)
+    filename = f"martingale_{n_str}n{m_str}m{bet_slug}.csv"
+
+    dir = './strat_data'
+    os.makedirs(dir, exist_ok=True)
+    path = os.path.join(dir, filename)
+    with open(path, 'w', newline='') as f:
+        writer = csv.DictWriter(
+            f,
+            fieldnames=['Round', 'Bet', 'Winning Number', 'Color', 'Net', 'Balance'],
+        )
+        writer.writeheader()
+        writer.writerows(rows)
+    print(f"\nSaved results to {path}")
 
 
 if __name__ == "__main__":
